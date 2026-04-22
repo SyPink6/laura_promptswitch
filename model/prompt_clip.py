@@ -1267,8 +1267,7 @@ class PromptCLIP(nn.Module):
         self.config = config
         clip_config = CLIPConfig.from_pretrained("openai/clip-vit-base-patch32")
         clip_config.vision_config.update({
-            "num_frames": self.config.num_frames if self.training 
-                else self.config.num_test_frames,
+            "num_frames": self.config.num_frames,
             "num_prompts": self.config.num_prompts,
         })
         self.clip = CLIPModel.from_pretrained("openai/clip-vit-base-patch32", config=clip_config)
@@ -1318,6 +1317,15 @@ class PromptCLIP(nn.Module):
         nn.init.zeros_(self.clip.vision_model.attn.out_proj.weight.data)
         nn.init.zeros_(self.clip.vision_model.attn.out_proj.bias.data)
 
+    def _set_video_frame_count(self, num_frames):
+        vision_model = self.clip.vision_model
+        vision_model.nf = num_frames
+        vision_model.config.num_frames = num_frames
+        vision_model.encoder.nf = num_frames
+        vision_model.encoder.config.num_frames = num_frames
+        for layer in vision_model.encoder.layers:
+            layer.nf = num_frames
+
     def forward_captioner(self, video_features, tokens):
         video_features = video_features.transpose(0, 1)
         with torch.no_grad():
@@ -1341,6 +1349,8 @@ class PromptCLIP(nn.Module):
         bs = data['video'].shape[0]
         text_data = data['text']
         video_data = data['video']
+        num_frames = video_data.shape[1]
+        self._set_video_frame_count(num_frames)
         video_data = video_data.reshape(-1, 3, self.config.input_res, self.config.input_res)
 
         text_features = self.clip.get_text_features(**text_data)

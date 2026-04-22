@@ -60,6 +60,7 @@ class Trainer(BaseTrainer):
             video_embeds_pooled = model_output['video_features_pooled']
             sims = sim_matrix_training(text_embeds, video_embeds_pooled, self.pooling_type)
             loss = self.loss['clip'](sims, self.model.clip.logit_scale)
+            loss_caption = torch.tensor(0.0, device=self.device)
 
             if 'caption' in self.loss.keys():
                 pred_logits = model_output['pred_logits']
@@ -82,7 +83,8 @@ class Trainer(BaseTrainer):
             self.global_step += 1
             if self.writer is not None:
                 self.writer.add_scalar('train/loss_train', loss.detach().item(), self.global_step)
-                self.writer.add_scalar('train/loss_cap', loss_caption.detach().item(), self.global_step)
+                if 'caption' in self.loss.keys():
+                    self.writer.add_scalar('train/loss_cap', loss_caption.detach().item(), self.global_step)
 
             total_loss += loss.detach().item()
 
@@ -169,7 +171,7 @@ class Trainer(BaseTrainer):
             # Pool frames for inference once we have all texts and videos
             model.pool_frames.cpu()
             vid_embeds_pooled = model.pool_frames_test(text_embeds, vid_embeds)
-            model.pool_frames.cuda()
+            model.pool_frames.to(self.device)
 
             text_embeds_per_video_id, vid_embeds_pooled_per_video_id = generate_embeds_per_video_id(text_embeds, 
                     vid_embeds_pooled, all_vid_ids, self.pooling_type_test)

@@ -37,7 +37,7 @@ class AllConfig(Config):
         parser.add_argument('--eval_window_size', type=int, default=5, help="Size of window to average metrics")
 
         # model parameters
-        parser.add_argument('--arch', type=str, default='clip_transformer')
+        parser.add_argument('--arch', type=str, default='prompt_clip')
         parser.add_argument('--clip_arch', type=str, default='ViT-B/32', help="CLIP arch. only when not using huggingface")
         parser.add_argument('--embed_dim', type=int, default=512, help="Dimensionality of the model embedding")
 
@@ -71,6 +71,19 @@ class AllConfig(Config):
         parser.add_argument('--tb_log_dir', type=str, default='logs')
 
         args = parser.parse_args()
+
+        if args.arch == 'clip_transformer':
+            args.pooling_type = 'transformer'
+            args.pooling_type_test = 'transformer'
+
+        if args.num_prompts <= 0:
+            raise ValueError("--num_prompts must be a positive integer.")
+
+        if args.num_frames % args.num_prompts != 0:
+            raise ValueError("--num_frames must be divisible by --num_prompts.")
+
+        if args.num_test_frames % args.num_prompts != 0:
+            raise ValueError("--num_test_frames must be divisible by --num_prompts.")
 
         args.model_path = os.path.join(args.output_dir, args.exp_name)
         args.tb_log_dir = os.path.join(args.tb_log_dir, args.exp_name)

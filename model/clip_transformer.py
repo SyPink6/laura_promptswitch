@@ -11,7 +11,7 @@ class CLIPTransformer(nn.Module):
         self.config = config
         self.clip = CLIPModel.from_pretrained("openai/clip-vit-base-patch32")
         config.pooling_type = 'transformer'
-        assert config.pooling_type == config.pooling_type_test
+        config.pooling_type_test = 'transformer'
         self.pool_frames = Transformer(config)
         self.pool_frames_test = self.pool_frames
 
@@ -27,10 +27,16 @@ class CLIPTransformer(nn.Module):
 
         text_features = self.clip.get_text_features(**text_data)
         video_features = self.clip.get_image_features(video_data)
-        video_features = video_features.reshape(batch_size, self.config.num_frames, -1)
+        num_frames = data['video'].shape[1]
+        video_features = video_features.reshape(batch_size, num_frames, -1)
         video_features_pooled = self.pool_frames(text_features, video_features)
 
-        if return_all_frames:
-            return text_features, video_features, video_features_pooled
+        output = {
+            'text_features': text_features,
+            'video_features_pooled': video_features_pooled,
+        }
 
-        return text_features, video_features_pooled
+        if return_all_frames:
+            output['video_features'] = video_features
+
+        return output

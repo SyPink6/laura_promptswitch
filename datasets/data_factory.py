@@ -1,3 +1,5 @@
+import os
+
 from torch.utils.data import DataLoader
 from torch.utils.data._utils.collate import default_collate
 
@@ -13,6 +15,12 @@ class DataFactory:
 
     @staticmethod
     def get_data_loader(config: Config, split_type='train'):
+        if not os.path.isdir(config.videos_dir):
+            raise FileNotFoundError(
+                f"Video directory not found: '{config.videos_dir}'. "
+                "Download the dataset videos and pass the correct path with --videos_dir."
+            )
+
         img_transforms = init_transform_dict(config.input_res)
         train_img_tfms = img_transforms['clip_train']
         test_img_tfms = img_transforms['clip_test']

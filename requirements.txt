@@ -1,0 +1,10 @@
+numpy
+opencv-python
+pandas
+Pillow
+tensorboard
+timm
+torch
+torchvision
+transformers==4.26.1
+tqdm

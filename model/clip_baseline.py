@@ -28,11 +28,17 @@ class CLIPBaseline(nn.Module):
         video_features = self.clip.get_image_features(video_data)
         text_features = text_features / text_features.norm(dim=-1, keepdim=True)
         video_features = video_features / video_features.norm(dim=-1, keepdim=True)
-        video_features = video_features.reshape(batch_size, self.config.num_frames, -1)
+        num_frames = data['video'].shape[1]
+        video_features = video_features.reshape(batch_size, num_frames, -1)
 
         video_features_pooled = self.pool_frames(text_features, video_features)
 
-        if return_all_frames:
-            return text_features, video_features, video_features_pooled
+        output = {
+            'text_features': text_features,
+            'video_features_pooled': video_features_pooled,
+        }
 
-        return text_features, video_features_pooled
+        if return_all_frames:
+            output['video_features'] = video_features
+
+        return output
