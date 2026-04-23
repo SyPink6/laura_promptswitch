@@ -157,6 +157,10 @@ def extract_embedding(model, image_tensor, weights_path: str, device: str):
 
     with torch.no_grad():
         embedding = model(batch)
+        if isinstance(embedding, (tuple, list)):
+            if len(embedding) == 0:
+                raise RuntimeError("TransFace model returned an empty tuple/list.")
+            embedding = embedding[0]
         embedding = embedding.float()
         embedding_norm = F.normalize(embedding, dim=1)
 
