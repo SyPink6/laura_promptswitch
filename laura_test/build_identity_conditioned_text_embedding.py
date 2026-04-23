@@ -175,8 +175,14 @@ def build_custom_text_features(clip_model, input_ids, attention_mask, replacemen
 
     expanded_attention_mask = None
     if attention_mask is not None:
-        expanded_attention_mask = attention_mask[:, None, None, :].to(hidden_states.dtype)
-        expanded_attention_mask = (1.0 - expanded_attention_mask) * torch.finfo(hidden_states.dtype).min
+        expanded_attention_mask = attention_mask[:, None, None, :].expand(
+            bsz, 1, seq_len, seq_len
+        ).to(hidden_states.dtype)
+        expanded_attention_mask = 1.0 - expanded_attention_mask
+        expanded_attention_mask = expanded_attention_mask.masked_fill(
+            expanded_attention_mask.bool(),
+            torch.finfo(hidden_states.dtype).min,
+        )
 
     encoder_outputs = text_model.encoder(
         inputs_embeds=hidden_states,
